@@ -1,4 +1,98 @@
+/* --- BME 680 --- */
+#include <stdio.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <esp_system.h>
+#include <bme680.h>
+#include <i2cdev.h>
+#include <string.h>
 
+// --- Sensor 1 ---
+#define SDA1 21
+#define SCL1 22
+#define PORT1 I2C_NUM_0
+#define ADDR1 BME680_I2C_ADDR_0 // 0x76
+
+// --- Sensor 2 ---
+#define SDA2 19
+#define SCL2 18
+#define PORT2 I2C_NUM_1
+#define ADDR2 BME680_I2C_ADDR_0 // gleiche Adresse, anderer Bus
+
+#if defined(CONFIG_IDF_TARGET_ESP32S2)
+#define APP_CPU_NUM PRO_CPU_NUM
+#endif
+
+void bme680_task(void *pvParameters)
+{
+    // Configuration Struct
+    struct
+    {
+        int port;
+        int sda;
+        int scl;
+        uint8_t addr;
+        const char *name;
+    } *cfg = pvParameters;
+
+    bme680_t sensor;
+    memset(&sensor, 0, sizeof(sensor));
+
+    ESP_ERROR_CHECK(bme680_init_desc(&sensor, cfg->addr, cfg->port, cfg->sda, cfg->scl));
+    ESP_ERROR_CHECK(bme680_init_sensor(&sensor));
+
+    bme680_set_oversampling_rates(&sensor, BME680_OSR_4X, BME680_OSR_NONE, BME680_OSR_2X);
+    bme680_set_filter_size(&sensor, BME680_IIR_SIZE_7);
+    bme680_set_heater_profile(&sensor, 0, 200, 100);
+    bme680_use_heater_profile(&sensor, 0);
+    bme680_set_ambient_temperature(&sensor, 10);
+
+    uint32_t duration;
+    bme680_get_measurement_duration(&sensor, &duration);
+
+    TickType_t last_wakeup = xTaskGetTickCount();
+    bme680_values_float_t values;
+
+    while (1)
+    {
+        if (bme680_force_measurement(&sensor) == ESP_OK)
+        {
+            vTaskDelay(duration);
+
+            if (bme680_get_results_float(&sensor, &values) == ESP_OK)
+            {
+                printf("%s: %.2f °C, %.2f %%RH, %.2f hPa, %.2f Ohm\n",
+                       cfg->name,
+                       values.temperature,
+                       values.humidity,
+                       values.pressure,
+                       values.gas_resistance);
+            }
+        }
+        vTaskDelayUntil(&last_wakeup, 1000 / portTICK_PERIOD_MS);
+    }
+}
+
+void app_main()
+{
+    ESP_ERROR_CHECK(i2cdev_init());
+
+    static const struct
+    {
+        int port;
+        int sda;
+        int scl;
+        uint8_t addr;
+        const char *name;
+    } sensors[] = {
+        {PORT1, SDA1, SCL1, ADDR1, "BME680_1"},
+        {PORT2, SDA2, SCL2, ADDR2, "BME680_2"}};
+
+    xTaskCreatePinnedToCore(bme680_task, "bme680_1", 4096, (void *)&sensors[0], 5, NULL, APP_CPU_NUM);
+    xTaskCreatePinnedToCore(bme680_task, "bme680_2", 4096, (void *)&sensors[1], 5, NULL, APP_CPU_NUM);
+}
+
+/*
 // ---- OLED DISPLAY -----
 #include <stdio.h>
 #include <freertos/FreeRTOS.h>
@@ -20,59 +114,4 @@ void app_main(void)
 
     // Text ausgeben
     ssd1306_printFixed(0, 10, "Hello World!", STYLE_NORMAL);
-}
-
-/*
-
- ---- ULTRASONIC ----
-
-#include <stdio.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include "ultrasonic.h"
-#include <inttypes.h>
-
-#define ULTRASONIC_TASK_STACK_SIZE 2048  // Stack in Bytes (pro Task)
-#define ULTRASONIC_TASK_PRIORITY   5     // Priorität (0–configMAX_PRIORITIES-1)
-
-static void ultrasonic_task(void *pvParameters)
-{
-    // Zeiger auf das übergebene Sensor-Objekt
-    ultrasonic_sensor_t *sensor = (ultrasonic_sensor_t *)pvParameters;
-
-    while (1)
-    {
-        uint32_t distance_cm;
-        esp_err_t res = ultrasonic_measure_cm(sensor, &distance_cm);
-
-        if (res == ESP_OK)
-            printf("Entfernung: %" PRIu32 " cm\n", distance_cm);
-        else
-            // printf("Messfehler: %s\n", esp_err_to_name(res));
-
-        vTaskDelay(pdMS_TO_TICKS(500)); // 500 ms Pause
-    }
-}
-
-void app_main(void)
-{
-    static ultrasonic_sensor_t sensor = {
-        .sig_pin = GPIO_NUM_19 // SIG-Pin
-    };
-
-    ultrasonic_init(&sensor);
-
-    // Task starten
-    xTaskCreate(
-        ultrasonic_task,              // Task-Funktion
-        "ultrasonic_task",            // Name
-        ULTRASONIC_TASK_STACK_SIZE,   // Stackgröße in Bytes
-        &sensor,                      // Parameter (Pointer auf Sensor)
-        ULTRASONIC_TASK_PRIORITY,     // Task-Priorität
-        NULL                          // Option: Handle (nicht gebraucht)
-    );
-}
-
-
-
-*/
+} */
