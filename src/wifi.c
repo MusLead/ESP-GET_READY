@@ -5,8 +5,8 @@
 #include "esp_event.h"
 #include "esp_netif.h"
 
-#define WIFI_SSID "FRITZ!Box 7490"       // Name of our WIFI
-#define WIFI_PASS "29049391511947891168" // password of ur WIFI
+#define WIFI_SSID "XXXX" // Name of our WIFI
+#define WIFI_PASS "XXXX" // password of ur WIFI
 
 static const char *TAG = "ESP32_WIFI";
 
