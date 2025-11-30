@@ -12,7 +12,7 @@ static const char *TAG = "HTTP_SERVER";
 static esp_err_t index_get_handler(httpd_req_t *req)
 {
     char json_resp[64];
-    snprintf(json_resp, sizeof(json_resp), "{ \"temp\": %s }", latest_temp);
+    snprintf(json_resp, sizeof(json_resp), "{ %s }", latest_temp);
 
     httpd_resp_set_type(req, "application/json");
     httpd_resp_send(req, json_resp, strlen(json_resp));

@@ -4,10 +4,24 @@
 
 // MQTT BROKER --> HIVEMQ
 // #define MQTT_ADDR_URL "mqtts://9729ca70c6144f3ca3a29dee8cf330ce.s1.eu.hivemq.cloud:8883"
-#define MQTT_ADDR_URL "mqtt://192.168.178.109"
+#define MQTT_ADDR_URL "mqtts://192.168.178.50:8883"
 
-extern const uint8_t certs_isrg_root_x1_pem_start[] asm("_binary_isrg_root_x1_pem_start");
-extern const uint8_t certs_isrg_root_x1_pem_end[] asm("_binary_isrg_root_x1_pem_end");
+// OLD CA crt
+// extern const uint8_t certs_isrg_root_x1_pem_start[] asm("_binary_isrg_root_x1_pem_start");
+// extern const uint8_t certs_isrg_root_x1_pem_end[] asm("_binary_isrg_root_x1_pem_end");
+// Added the required CAs for the mqtt_broker
+// Required CAs:
+// client.crt
+// client.key
+// ca.crt
+extern const uint8_t _binary_client_crt_start[] asm("_binary_client_crt_start");
+extern const uint8_t _binary_client_crt_end[] asm("_binary_client_crt_end");
+
+extern const uint8_t _binary_client_key_start[] asm("_binary_client_key_start");
+extern const uint8_t _binary_client_key_end[] asm("_binary_client_key_end");
+
+extern const uint8_t _binary_ca_crt_start[] asm("_binary_ca_crt_start");
+extern const uint8_t _binary_ca_crt_end[] asm("_binary_ca_crt_end");
 
 static const char *TAG = "MQTT_PUBSUB";
 
@@ -74,7 +88,12 @@ void mqtt_pubsub_start(void)
         // .broker.verification.certificate = (const char *)certs_isrg_root_x1_pem_start,
         // .credentials.username = "ESP32",
         // .credentials.authentication.password = "Test1234"
-
+        .broker.verification.certificate = (const char *)_binary_ca_crt_start,
+        .broker.verification.certificate_len = _binary_ca_crt_end - _binary_ca_crt_start,
+        .credentials.authentication.certificate = (const char *)_binary_client_crt_start,
+        .credentials.authentication.certificate_len = _binary_client_crt_end - _binary_client_crt_start,
+        .credentials.authentication.key = (const char *)_binary_client_key_start,
+        .credentials.authentication.key_len = _binary_client_key_end - _binary_client_key_start,
     };
 
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
