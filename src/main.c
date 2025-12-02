@@ -96,7 +96,7 @@ void app_main(void)
     xTaskCreatePinnedToCore(http_server_start, "HTTP SERVER TASK - CORE 1", 4096, NULL, 1, NULL, 1);
 } */
 
-#include "esp_log.h"
+/* #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "i2c_bus.h"
@@ -185,4 +185,22 @@ void app_main(void)
 
         vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
+} */
+
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "nvs_flash.h"
+#include "anemometer.h"
+
+void app_main()
+{
+
+    // TO MAKE FREE UP ANY ALLOCATED HEAP MEMORY AND TO PRINT THE EDF VERSION
+    ESP_LOGI("MAIN", "[APP] Startup..");
+    ESP_LOGI("MAIN", "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
+    ESP_LOGI("MAIN", "[APP] IDF version: %s", esp_get_idf_version());
+    //
+
+    xTaskCreate(anemometer_task, "Anemomter", 1024, NULL, 4, NULL);
 }
