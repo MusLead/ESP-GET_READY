@@ -1,3 +1,5 @@
+//
+// Here is the tested code which start i2c and starts the bme680 and servo at the same time
 /* #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"

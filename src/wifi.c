@@ -5,9 +5,6 @@
 #include "esp_event.h"
 #include "esp_netif.h"
 
-#define WIFI_SSID "OnlySamsung" // Name of our WIFI
-#define WIFI_PASS "vklg8323"    // password of ur WIFI
-
 static const char *TAG = "ESP32_WIFI";
 
 // WiFi Event Handler

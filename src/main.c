@@ -1,3 +1,5 @@
+// ----
+// This entire code is the first and simple implementation to start wifi and start the mqtt_pubsub service and start publishing evry 5 the 'Periodic message' message in the topic 'ESP32/values'
 /* #include <stdio.h>
 #include "nvs_flash.h"
 #include "esp_log.h"
@@ -10,7 +12,7 @@
 void app_main(void)
 {
 
-    // TO MAKE FREE UP ANY ALLOCATED HEAP MEMORY AND TO PRINT THE EDF VERSION
+    // TO FREE UP ANY ALLOCATED HEAP MEMORY AND TO PRINT THE EDF VERSION
     ESP_LOGI("MAIN", "[APP] Startup..");
     ESP_LOGI("MAIN", "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
     ESP_LOGI("MAIN", "[APP] IDF version: %s", esp_get_idf_version());
@@ -31,39 +33,13 @@ void app_main(void)
         vTaskDelay(pdMS_TO_TICKS(5000)); // 5 sek
     }
 } */
-/*
-#include <stdio.h>
-#include "nvs_flash.h"
-#include "esp_log.h"
-#include "freertos/FreeRTOS.h"
+// ----
 
-#include "wifi.h"
-#include "mqtt_broker.h"
-
-void app_main(void)
-{
-    // TO MAKE FREE UP ANY ALLOCATED HEAP MEMORY AND TO PRINT THE EDF VERSION
-    ESP_LOGI("MAIN", "[APP] Startup..");
-    ESP_LOGI("MAIN", "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
-    ESP_LOGI("MAIN", "[APP] IDF version: %s", esp_get_idf_version());
-    //
-
-    // Always initialize the default NVS partition first
-    nvs_flash_init();
-
-    // start WIFI connection
-    connect_wifi();
-
-    // Setup AND Start mqtt
-    // mqtt_pubsub_start();
-
-    // OR
-
-    //...
-    // Set ESP as Broker
-    mqtt_broker_start();
-} */
-
+//
+// ----
+// This implemntation starts the wifi and pins two task in two task:
+// Core 0 for the mqtt_broker
+// Core 1 for the http_server
 /* #include <stdio.h>
 #include "nvs_flash.h"
 #include "esp_log.h"
@@ -77,7 +53,7 @@ void app_main(void)
 
 void app_main(void)
 {
-    // TO MAKE FREE UP ANY ALLOCATED HEAP MEMORY AND TO PRINT THE EDF VERSION
+    // TO FREE UP ANY ALLOCATED HEAP MEMORY AND TO PRINT THE EDF VERSION
     ESP_LOGI("MAIN", "[APP] Startup..");
     ESP_LOGI("MAIN", "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
     ESP_LOGI("MAIN", "[APP] IDF version: %s", esp_get_idf_version());
@@ -95,7 +71,11 @@ void app_main(void)
     // Start HTTP Server on --> CORE 1
     xTaskCreatePinnedToCore(http_server_start, "HTTP SERVER TASK - CORE 1", 4096, NULL, 1, NULL, 1);
 } */
+// ----
 
+//
+// ----
+// This is a combination of mqtt_pubsub with http_server and additionally the bme680 publish every 2 sec the current temp and iaq_score
 /* #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -109,7 +89,7 @@ static const char *TAG = "MAIN";
 
 void app_main(void)
 {
-    // TO MAKE FREE UP ANY ALLOCATED HEAP MEMORY AND TO PRINT THE EDF VERSION
+    // TO FREE UP ANY ALLOCATED HEAP MEMORY AND TO PRINT THE EDF VERSION
     ESP_LOGI("MAIN", "[APP] Startup..");
     ESP_LOGI("MAIN", "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
     ESP_LOGI("MAIN", "[APP] IDF version: %s", esp_get_idf_version());
@@ -186,17 +166,20 @@ void app_main(void)
         vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
 } */
+// ----
 
+//
+//
+// This is the current test for the anemometer:
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "nvs_flash.h"
 #include "anemometer.h"
-
 void app_main()
 {
 
-    // TO MAKE FREE UP ANY ALLOCATED HEAP MEMORY AND TO PRINT THE EDF VERSION
+    // TO FREE UP ANY ALLOCATED HEAP MEMORY AND TO PRINT THE EDF VERSION
     ESP_LOGI("MAIN", "[APP] Startup..");
     ESP_LOGI("MAIN", "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
     ESP_LOGI("MAIN", "[APP] IDF version: %s", esp_get_idf_version());
