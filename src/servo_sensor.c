@@ -1,8 +1,13 @@
 #include "servo_sensor.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "esp_log.h"
 
 static const char *TAG = "Servo_Task";
 
+bool window_state = false;
+
+// Servo Initialization
 esp_err_t servo_init(void)
 {
     servo_config_t servo_cfg = {
@@ -29,22 +34,13 @@ esp_err_t servo_init(void)
     return ESP_OK;
 }
 
-// The task function
+// Servo Control Task
 void servo_start_task(void *pvParameters)
 {
     ESP_LOGI(TAG, "Starting servo task");
-
     while (1)
     {
-        // Sweep from 0° to 180°
-        for (int i = SERVO_CALIB_0_DEG; i <= SERVO_CALIB_180_DEG; i++)
-        {
-            iot_servo_write_angle(LEDC_LOW_SPEED_MODE, 0, i);
-            vTaskDelay(pdMS_TO_TICKS(20));
-        }
-
-        // Return to 0°
-        iot_servo_write_angle(LEDC_LOW_SPEED_MODE, 0, SERVO_CALIB_0_DEG);
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        iot_servo_write_angle(LEDC_LOW_SPEED_MODE, 0, window_state ? 90 : 0); // open or closed
+        vTaskDelay(pdMS_TO_TICKS(200));
     }
 }

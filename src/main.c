@@ -158,7 +158,7 @@ void app_main(void)
     while (1)
     {
         snprintf(msg, sizeof(msg),
-                 "Temp: %.2f°C,IAQ Score: %u",
+                 "Temp: %.2f,IAQ Score: %u",
                  sensor_data.air_temperature,
                  sensor_data.iaq_score);
         mqtt_publish("ESP32/values", msg, 1);
@@ -170,20 +170,121 @@ void app_main(void)
 
 //
 //
-// This is the current test for the anemometer:
+// ----
+// FINAL IMPLEMENTATION WITH ALL COMPONENTS
 #include "esp_log.h"
+#include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "nvs_flash.h"
+
+#include "wifi.h"
+#include "mqtt_pub_sub.h"
+
+#include "i2c_bus.h"
+#include "bme680_sensor.h"
 #include "anemometer.h"
+
+#include "relay_switch.h"
+#include "servo_sensor.h"
+#include "absorber.h"
+
+static const char *TAG = "MAIN";
+
+void app_main(void)
+{
+    // 1 System Info
+    ESP_LOGI(TAG, "System start");
+    ESP_LOGI(TAG, "Free heap: %lu", esp_get_free_heap_size());
+    ESP_LOGI(TAG, "IDF version: %s", esp_get_idf_version());
+
+    // 2 Always initialize the default NVS partition first
+    nvs_flash_init();
+
+    // 3 WiFi
+    connect_wifi();
+
+    // 4 Start MQTT (connect + subscribe + auto publish logic preserved)
+    mqtt_pubsub_start();
+
+    //
+    // 5 INIT THE I2C componennt
+    ESP_ERROR_CHECK(i2c_bus_init());
+    //
+    // ...
+
+    //
+    // 6 SENSORS INIT
+    ESP_ERROR_CHECK(bme680_sensor_init());
+
+    // SERVO INIT
+    ESP_ERROR_CHECK(servo_init());
+
+    //
+    // 7 At the end create a task from the sensor
+    // BME680 TASK
+    xTaskCreate(bme680_read_task, "bme680_task", 4096, NULL, 3, NULL);
+    // ANEMOMETER TASK
+    xTaskCreate(anemometer_task, "anemometer_task", 3072, NULL, 4, NULL);
+    // RELAY SWITCH TASK
+    xTaskCreate(relay_start_task, "relay_task", 2048, NULL, 2, NULL);
+    // SERVO TASK
+    xTaskCreate(servo_start_task, "servo_task", 2048, NULL, 2, NULL);
+    // ABSORBER TASK
+    xTaskCreate(absorber_task, "absorber_task", 2048, NULL, 2, NULL);
+
+    ESP_LOGI(TAG, "System initialized successfully");
+}
+// ----
+
+/* // ----
+// reference : https://www.google.com/search?q=i2c_master.h+i2c+scanner+esp+idf&client=safari&hs=ngKU&sca_esv=7059b957e07c44b7&rls=en&biw=1210&bih=724&sxsrf=AE3TifM3WxiSKLym5dsyO_J0y_WvB7Ps5Q%3A1766054242464&ei=YtlDaYONHL6di-gPnNSJ-Qo&ved=0ahUKEwiDxpre-MaRAxW-zgIHHRxqIq8Q4dUDCBE&uact=5&oq=i2c_master.h+i2c+scanner+esp+idf&gs_lp=Egxnd3Mtd2l6LXNlcnAiIGkyY19tYXN0ZXIuaCBpMmMgc2Nhbm5lciBlc3AgaWRmMgUQABjvBTIFEAAY7wUyCBAAGIAEGKIEMggQABiiBBiJBTIFEAAY7wVI4hFQsgFYwA9wAXgBkAEAmAGUAaABnQeqAQM0LjS4AQPIAQD4AQGYAgmgAv4HwgIKEAAYsAMY1gQYR8ICBRAhGKABwgIEECEYFZgDAIgGAZAGCJIHAzMuNqAH-x2yBwMyLja4B_UHwgcFMi04LjHIBzaACAA&sclient=gws-wiz-serp#fpstate=ive&vld=cid:20388e77,vid:Snp6iTu1R7E,st:0
+// I2C SCANNER IMPLEMENTATION
+#include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/i2c_master.h"
+#include "esp_log.h"
+#include "i2c_bus.h"
+
+static const char *TAG = "MAIN";
+
+void i2c_scanner(void *args)
+{
+    ESP_LOGI(TAG, "Starting I2C scanner...");
+
+    i2c_master_bus_handle_t bus = i2c_bus_get_handle();
+
+    while (1)
+    {
+        esp_err_t ret;
+
+        for (int address = 1; address < 127; address++)
+        {
+
+            ret = i2c_master_probe(bus, address, 1000);
+
+            if (ret == ESP_OK)
+            {
+                ESP_LOGI(TAG, "I2C device found at address 0x%X", address);
+            }
+        }
+
+        printf("I2C scan completed.\n");
+        vTaskDelay(10000 / portTICK_PERIOD_MS); // Delay 10 seconds
+    }
+    vTaskDelete(NULL);
+}
+
 void app_main()
 {
+    // Initialize I2C
+    ESP_LOGI(TAG, "Initialisiere I2C Bus...");
+    if (i2c_bus_init() != ESP_OK)
+    {
+        ESP_LOGE(TAG, "I2C Bus Initialisierung fehlgeschlagen!");
+        return;
+    }
 
-    // TO FREE UP ANY ALLOCATED HEAP MEMORY AND TO PRINT THE EDF VERSION
-    ESP_LOGI("MAIN", "[APP] Startup..");
-    ESP_LOGI("MAIN", "[APP] Free memory: %" PRIu32 " bytes", esp_get_free_heap_size());
-    ESP_LOGI("MAIN", "[APP] IDF version: %s", esp_get_idf_version());
-    //
-
-    xTaskCreate(anemometer_task, "Anemomter", 1024, NULL, 4, NULL);
+    xTaskCreate(i2c_scanner, "I2C Scanner", 2048, NULL, 2, NULL);
 }
+ */

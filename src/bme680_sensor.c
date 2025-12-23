@@ -3,18 +3,17 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "mqtt_pub_sub.h"
 
 static const char *TAG = "BME680_SENSOR";
 
-// Der globale Daten-Speicher
+// BME680 Sensor Data
 bme680_data_t sensor_data = {0};
 
 // BME680 Handle
 static bme680_handle_t bme_handle = NULL;
 
-// =======================================
-// Init
-// =======================================
+// INIT THE BME680 SENSOR
 esp_err_t bme680_sensor_init(void)
 {
     ESP_LOGI(TAG, "Initializing BME680...");
@@ -40,9 +39,7 @@ esp_err_t bme680_sensor_init(void)
     return ESP_OK;
 }
 
-// =======================================
-// Eine Messung auslesen
-// =======================================
+// READ SENSOR DATA
 esp_err_t bme680_sensor_read(void)
 {
     if (!bme_handle)
@@ -65,56 +62,24 @@ esp_err_t bme680_sensor_read(void)
     return ESP_OK;
 }
 
-// =======================================
-// Optional: Register-Debug
-// =======================================
-void bme680_print_registers(void)
-{
-    if (!bme_handle)
-        return;
-
-    bme680_control_measurement_register_t ctrl_meas;
-    bme680_control_humidity_register_t ctrl_humi;
-    bme680_config_register_t cfg;
-    bme680_control_gas0_register_t gas0;
-    bme680_control_gas1_register_t gas1;
-
-    bme680_get_configuration_register(bme_handle, &cfg);
-    bme680_get_control_measurement_register(bme_handle, &ctrl_meas);
-    bme680_get_control_humidity_register(bme_handle, &ctrl_humi);
-    bme680_get_control_gas0_register(bme_handle, &gas0);
-    bme680_get_control_gas1_register(bme_handle, &gas1);
-
-    ESP_LOGI(TAG, "===== BME680 Registers =====");
-    ESP_LOGI(TAG, "Variant ID     : 0x%02X", bme_handle->variant_id);
-    ESP_LOGI(TAG, "Config         : 0x%02X", cfg.reg);
-    ESP_LOGI(TAG, "Ctrl Meas      : 0x%02X", ctrl_meas.reg);
-    ESP_LOGI(TAG, "Ctrl Hum       : 0x%02X", ctrl_humi.reg);
-    ESP_LOGI(TAG, "Ctrl Gas0      : 0x%02X", gas0.reg);
-    ESP_LOGI(TAG, "Ctrl Gas1      : 0x%02X", gas1.reg);
-    ESP_LOGI(TAG, "============================");
-}
-
-// =======================================
-// Task-Funktion – wird in main verwendet
-// =======================================
+// BME680 READ TASK
 void bme680_read_task(void *pvParameters)
 {
     ESP_LOGI(TAG, "BME680 read task started");
     TickType_t last_wake_time = xTaskGetTickCount();
+    char msg[64];
 
     while (1)
     {
         if (bme680_sensor_read() == ESP_OK)
         {
-            ESP_LOGI(TAG,
-                     "T=%.2f°C H=%.2f%% P=%.2fhPa GAS=%.2fkΩ IAQ=%u (%s)",
+            snprintf(msg, sizeof(msg),
+                     "Temp: %.2f, H=%.2f, AQ: %u",
                      sensor_data.air_temperature,
                      sensor_data.relative_humidity,
-                     sensor_data.barometric_pressure,
-                     sensor_data.gas_resistance,
-                     sensor_data.iaq_score,
-                     bme680_air_quality_to_string(sensor_data.iaq_score));
+                     sensor_data.iaq_score);
+
+            mqtt_publish("ESP32/indoor", msg, 1); // change this to "ESP32/outdoor" later
         }
 
         vTaskDelayUntil(&last_wake_time, 10); // macht eine absolute Verzögerung --> Zyklen bleiben stabil und präzise.

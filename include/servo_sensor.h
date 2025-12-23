@@ -2,12 +2,11 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <iot_servo.h>
-#include <esp_err.h>
+#include <stdbool.h>
 
-/* ----- Configuration ----- */
-#define SERVO_GPIO 18           /**< GPIO connected to the servo */
-#define SERVO_CALIB_0_DEG 30    /**< Servo calibration value for 0° */
-#define SERVO_CALIB_180_DEG 195 /**< Servo calibration value for 180° */
+// SERVO CONFIG
+#define SERVO_GPIO 23     // GPIO pin connected to the servo
+extern bool window_state; // false = closed, true = open
 
 esp_err_t servo_init(void);
 
