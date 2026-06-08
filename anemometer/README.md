@@ -1,0 +1,2 @@
+# Anemometer (Arduino)
+This Folder contains a program file to testing the functionality of the Anemometer wihtout using the ESP. This was tested on June 2026 with Genuino101. Agha made a module so that the Anemometer Sensor could be used for other Project.
